@@ -83,7 +83,7 @@
             resultsContainer.innerHTML = '<div class="flex justify-center items-center h-full"><p class="text-lg text-gray-400">Searching...</p></div>';
 
             // Construct the API URL
-            const apiUrl = `https://api.scryfall.com/cards/search?q=e%3A${encodeURIComponent(setCode)}%20cn%3A${encodeURIComponent(cardNumber)}`;
+            const apiUrl = `https://api.scryfall.com/cards/search?q=e%3A${encodeURIComponent(setCode)}%20cn%3A${encodeURIComponent(cardNumber)}%20format%3Apaper`;
 
             try {
                 const response = await fetch(apiUrl);
