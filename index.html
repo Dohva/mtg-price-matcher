@@ -37,7 +37,7 @@
                     <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
                 </svg>
                 <h2 class="text-2xl font-bold">Search for a Card</h2>
-                <p class="mt-2">Enter a set code and card number below (e.g., fdn:1)</p>
+                <p class="mt-2">Enter a set code and card number below (e.g., fdn 1)</p>
             </div>
         </div>
     </main>
@@ -45,7 +45,7 @@
     <!-- Search bar at the bottom -->
     <footer class="p-4 bg-gray-900/80 backdrop-blur-sm border-t border-gray-700">
         <div class="max-w-4xl mx-auto">
-            <input type="text" id="searchInput" placeholder="Enter set code and card number (e.g., fdn:1) and press Enter" class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none text-white placeholder-gray-400">
+            <input type="text" id="searchInput" placeholder="Enter set code and card number (e.g., fdn 1) and press Enter" class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none text-white placeholder-gray-400">
         </div>
     </footer>
 
@@ -69,10 +69,10 @@
         async function handleSearch(query) {
             if (!query) return;
 
-            // Simple validation for "code:number" format
-            const parts = query.split(':');
+            // Simple validation for "code number" format
+            const parts = query.split(' ');
             if (parts.length !== 2 || !parts[0] || !parts[1]) {
-                displayError('Invalid format. Please use "set_code:card_number" (e.g., fdn:1).');
+                displayError('Invalid format. Please use "set_code:card_number" (e.g., fdn 1).');
                 return;
             }
 
