@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scryfall Card Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for better aesthetics */
+        #results-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        #results-container::-webkit-scrollbar-track {
+            background: #2d3748; /* gray-800 */
+        }
+        #results-container::-webkit-scrollbar-thumb {
+            background: #4a5568; /* gray-600 */
+            border-radius: 4px;
+        }
+        #results-container::-webkit-scrollbar-thumb:hover {
+            background: #718096; /* gray-500 */
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col h-screen">
+
+    <!-- Main content area -->
+    <main class="flex-grow flex flex-col items-center justify-center p-4 overflow-hidden">
+        <div id="results-container" class="w-full max-w-4xl h-full overflow-y-auto rounded-lg p-4">
+            <!-- Initial message -->
+            <div id="initial-message" class="flex flex-col items-center justify-center h-full text-gray-400">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-search mb-4" viewBox="0 0 16 16">
+                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                </svg>
+                <h2 class="text-2xl font-bold">Search for a Card</h2>
+                <p class="mt-2">Enter a set code and card number below (e.g., fdn:1)</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Search bar at the bottom -->
+    <footer class="p-4 bg-gray-900/80 backdrop-blur-sm border-t border-gray-700">
+        <div class="max-w-4xl mx-auto">
+            <input type="text" id="searchInput" placeholder="Enter set code and card number (e.g., fdn:1) and press Enter" class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none text-white placeholder-gray-400">
+        </div>
+    </footer>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const resultsContainer = document.getElementById('results-container');
+        const initialMessage = document.getElementById('initial-message');
+
+        // Listen for 'Enter' key press in the search input
+        searchInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const query = searchInput.value.trim();
+                handleSearch(query);
+            }
+        });
+
+        /**
+         * Handles the search logic
+         * @param {string} query - The search query from the input field.
+         */
+        async function handleSearch(query) {
+            if (!query) return;
+
+            // Simple validation for "code:number" format
+            const parts = query.split(':');
+            if (parts.length !== 2 || !parts[0] || !parts[1]) {
+                displayError('Invalid format. Please use "set_code:card_number" (e.g., fdn:1).');
+                return;
+            }
+
+            const setCode = parts[0].toLowerCase();
+            const cardNumber = parts[1];
+
+            // Show a loading indicator
+            resultsContainer.innerHTML = '<div class="flex justify-center items-center h-full"><p class="text-lg text-gray-400">Searching...</p></div>';
+
+            // Construct the API URL
+            const apiUrl = `https://api.scryfall.com/cards/search?q=e%3A${encodeURIComponent(setCode)}%20cn%3A${encodeURIComponent(cardNumber)}`;
+
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                if (response.ok && data.data && data.data.length > 0) {
+                    displayCard(data.data[0]);
+                } else {
+                    // Handle cases where the API returns a 200 OK but no card (or an error object)
+                    const errorMessage = data.details || `Card not found for query: ${query}`;
+                    displayError(errorMessage);
+                }
+            } catch (error) {
+                console.error('Error fetching card data:', error);
+                displayError('An error occurred while searching. Please check the console for details.');
+            }
+        }
+
+        /**
+         * Displays the found card's information on the screen.
+         * @param {object} card - The card object from the Scryfall API.
+         */
+        function displayCard(card) {
+            // Clear previous results
+            resultsContainer.innerHTML = '';
+
+            // Create the main grid layout
+            const cardElement = document.createElement('div');
+            cardElement.className = 'grid grid-cols-1 md:grid-cols-3 gap-8';
+
+            // --- Image Column ---
+            const imageContainer = document.createElement('div');
+            imageContainer.className = 'md:col-span-1 flex justify-center items-start';
+            const cardImage = document.createElement('img');
+            cardImage.src = card.image_uris?.normal || 'https://placehold.co/488x680/1a202c/ffffff?text=No+Image';
+            cardImage.alt = card.name;
+            cardImage.className = 'rounded-lg shadow-2xl w-full max-w-sm';
+            cardImage.onerror = () => {
+                cardImage.src = 'https://placehold.co/488x680/1a202c/ffffff?text=Image+Error';
+            };
+            imageContainer.appendChild(cardImage);
+
+            // --- Info and Prices Column ---
+            const infoContainer = document.createElement('div');
+            infoContainer.className = 'md:col-span-2 space-y-6';
+
+            // Card Details
+            const detailsElement = document.createElement('div');
+            detailsElement.className = 'bg-gray-800 p-6 rounded-lg shadow-lg';
+            detailsElement.innerHTML = `
+                <h1 class="text-4xl font-bold tracking-tight">${card.name}</h1>
+                <p class="text-lg text-gray-400 mt-2">${card.set_name} - #${card.collector_number}</p>
+            `;
+
+            // Prices
+            const pricesElement = document.createElement('div');
+            pricesElement.className = 'bg-gray-800 p-6 rounded-lg shadow-lg';
+            pricesElement.innerHTML = `<h2 class="text-2xl font-semibold mb-4">Prices</h2>`;
+
+            const pricesGrid = document.createElement('div');
+            pricesGrid.className = 'grid grid-cols-2 sm:grid-cols-3 gap-4';
+
+            const priceMapping = {
+                usd: { label: 'USD', type: 'Regular' },
+                usd_foil: { label: 'USD', type: 'Foil' },
+                eur: { label: 'EUR', type: 'Regular' },
+                eur_foil: { label: 'EUR', type: 'Foil' },
+                tix: { label: 'TIX', type: 'Online' },
+            };
+
+            let hasPrices = false;
+            for (const [key, value] of Object.entries(card.prices)) {
+                if (value && priceMapping[key]) {
+                    hasPrices = true;
+                    const priceInfo = priceMapping[key];
+                    const priceItem = document.createElement('div');
+                    priceItem.className = 'bg-gray-700 p-3 rounded-md';
+                    priceItem.innerHTML = `
+                        <p class="font-semibold text-white">${priceInfo.label} ${priceInfo.type}</p>
+                        <p class="text-xl text-green-400">${key.includes('eur') ? '€' : '$'}${value}</p>
+                    `;
+                    pricesGrid.appendChild(priceItem);
+                }
+            }
+            
+            if (!hasPrices) {
+                pricesGrid.innerHTML = '<p class="text-gray-400 col-span-full">No pricing data available for this card.</p>';
+            }
+
+            pricesElement.appendChild(pricesGrid);
+
+            // Append all parts
+            infoContainer.appendChild(detailsElement);
+            infoContainer.appendChild(pricesElement);
+            cardElement.appendChild(imageContainer);
+            cardElement.appendChild(infoContainer);
+            resultsContainer.appendChild(cardElement);
+        }
+
+        /**
+         * Displays an error message in the results container.
+         * @param {string} message - The error message to display.
+         */
+        function displayError(message) {
+            resultsContainer.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full text-red-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-exclamation-triangle-fill mb-4" viewBox="0 0 16 16">
+                        <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
+                    </svg>
+                    <h2 class="text-2xl font-bold">Error</h2>
+                    <p class="mt-2">${message}</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
